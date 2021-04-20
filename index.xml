@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Fj max</title>
+    <link>https://blog.im404.me/</link>
+    <description>Recent content on Fj max</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Tue, 20 Apr 2021 22:53:04 +0800</lastBuildDate><atom:link href="https://blog.im404.me/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Isometric 3D in 2D Invironment #1 Project Setup and Basic Calculation</title>
+      <link>https://blog.im404.me/posts/isometric-3d-in-2d-invironment-1_project-setup-and-basic-calculation/</link>
+      <pubDate>Tue, 20 Apr 2021 22:53:04 +0800</pubDate>
+      
+      <guid>https://blog.im404.me/posts/isometric-3d-in-2d-invironment-1_project-setup-and-basic-calculation/</guid>
+      <description>I&amp;rsquo;ve released a game called Ladder Box, it&amp;rsquo;s a 3D puzzle game that is all programmed in a 2D environment.
+  You can check it out here
+Folks on Reddit curious how I make this, I tried to briefly describe the overall idea of how to make this happen but did not dive deep, and now I&amp;rsquo;m gonna tell you guys how I make this work.
+I&amp;rsquo;m using Godot Engine in this series, but you can skip the engine-specific part (scripting, scene building) and do it in other engines/frameworks, and I highly encourage you to do so.</description>
+    </item>
+    
+  </channel>
+</rss>
