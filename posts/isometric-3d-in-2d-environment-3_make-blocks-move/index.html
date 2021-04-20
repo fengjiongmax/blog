@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="https://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.80.0" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Isometric 3D in 2D Environment #3 Make Blocks Move &middot; Fj max</title>
+  <meta name="description" content="" />
+
+  
+  <link type="text/css" rel="stylesheet" href="https://blog.im404.me/css/print.css" media="print">
+  <link type="text/css" rel="stylesheet" href="https://blog.im404.me/css/poole.css">
+  <link type="text/css" rel="stylesheet" href="https://blog.im404.me/css/syntax.css">
+  <link type="text/css" rel="stylesheet" href="https://blog.im404.me/css/hyde.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Abril+Fatface|PT+Sans:400,400i,700">
+
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  
+</head>
+
+  <body class=" layout-reverse">
+  <aside class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://blog.im404.me/"><h1>Fj max</h1></a>
+      <p class="lead">
+       fengjiongmax&#39;s blog 
+      </p>
+    </div>
+
+    <nav>
+      <ul class="sidebar-nav">
+        <li><a href="https://blog.im404.me/">Home</a> </li>
+        
+      </ul>
+    </nav>
+
+    <p>&copy; 2021. All rights reserved. </p>
+  </div>
+</aside>
+
+    <main class="content container">
+    <div class="post">
+  <h1>Isometric 3D in 2D Environment #3 Make Blocks Move</h1>
+  <time datetime=2021-04-21T00:54:38&#43;0800 class="post-date">Wed, Apr 21, 2021</time>
+  <p>I&rsquo;ve released a game called Ladder Box, it&rsquo;s a 3D puzzle game that is all programmed in a 2D environment.</p>
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
+  <iframe src="https://www.youtube.com/embed/-PINYXwhEkc" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" allowfullscreen title="YouTube Video"></iframe>
+</div>
+
+<p>You can check it out <a href="https://store.steampowered.com/app/1444390/Ladder_Box/">here</a></p>
+<p>You can find all the textures, scripts in this GitHub repo: <a href="https://github.com/fengjiongmax/3D_iso_in_2D">https://github.com/fengjiongmax/3D_iso_in_2D</a></p>
+<p>Godot 3.2.x is used in this project, you can check the commits for what&rsquo;s new in each part of this series.</p>
+<h1 id="some-changes">Some changes</h1>
+<p>Before we make more changes to movable and unmovable scripts:
+name movable Movable and add every movable to group “movable”:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript">class_name Movable
+<span style="color:#66d9ef">extends</span> BlockBase
+
+<span style="color:#66d9ef">func</span> _ready():
+    add_to_group(<span style="color:#e6db74">&#34;movable&#34;</span>)
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>name unmovable Unmovable:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript">class_name Unmovable
+<span style="color:#66d9ef">extends</span> BlockBase
+
+<span style="color:#66d9ef">func</span> _ready():
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>Store the grid content
+We need to know what’s on our board and their position, and a place that stores this information, I’m putting this in the global Grid(grid.gd).
+To make things more organized, let’s move something that can be calculated statically into another script.
+Create a script call grid_utils.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript">class_name GridUtils
+<span style="color:#66d9ef">const</span> TEXTURE_SCALE <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>
+<span style="color:#66d9ef">const</span> texture_w :<span style="color:#f92672">=</span> <span style="color:#ae81ff">24</span>
+<span style="color:#66d9ef">const</span> texture_h :<span style="color:#f92672">=</span> <span style="color:#ae81ff">25</span>
+<span style="color:#66d9ef">const</span> SINGLE_X <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector2</span>(texture_w<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>,texture_h<span style="color:#f92672">/</span><span style="color:#ae81ff">4</span>) <span style="color:#f92672">*</span> TEXTURE_SCALE
+<span style="color:#66d9ef">const</span> SINGLE_Z <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector2</span>(<span style="color:#f92672">-</span>texture_w<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>,texture_h<span style="color:#f92672">/</span><span style="color:#ae81ff">4</span>) <span style="color:#f92672">*</span> TEXTURE_SCALE
+<span style="color:#66d9ef">const</span> SINGLE_Y <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector2</span>(<span style="color:#ae81ff">0</span>,<span style="color:#f92672">-</span>texture_h<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>) <span style="color:#f92672">*</span> TEXTURE_SCALE
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">func</span> game_to_engine(x:<span style="color:#a6e22e">int</span>,y:<span style="color:#a6e22e">int</span>,z:<span style="color:#a6e22e">int</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">Vector3</span>:
+    <span style="color:#66d9ef">var</span> _rtn_2d <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector2</span><span style="color:#f92672">.</span>ZERO
+    _rtn_2d <span style="color:#f92672">+=</span> x<span style="color:#f92672">*</span>SINGLE_X
+    _rtn_2d <span style="color:#f92672">+=</span> z<span style="color:#f92672">*</span>SINGLE_Z
+    _rtn_2d <span style="color:#f92672">+=</span> y<span style="color:#f92672">*</span>SINGLE_Y
+    <span style="color:#66d9ef">var</span> _z <span style="color:#f92672">=</span> (x<span style="color:#f92672">+</span>y<span style="color:#f92672">+</span>z)<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>
+    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">Vector3</span>(_rtn_2d<span style="color:#f92672">.</span>x,_rtn_2d<span style="color:#f92672">.</span>y,_z)
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">func</span> game_to_enginev(game_pos:<span style="color:#a6e22e">Vector3</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">Vector3</span>:
+    <span style="color:#66d9ef">return</span> game_to_engine(<span style="color:#a6e22e">int</span>(game_pos<span style="color:#f92672">.</span>x),<span style="color:#a6e22e">int</span>(game_pos<span style="color:#f92672">.</span>y),<span style="color:#a6e22e">int</span>(game_pos<span style="color:#f92672">.</span>z))
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">func</span> calc_xyz(v3:<span style="color:#a6e22e">Vector3</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">int</span>:
+    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">int</span>(v3<span style="color:#f92672">.</span>x<span style="color:#f92672">+</span>v3<span style="color:#f92672">.</span>y<span style="color:#f92672">+</span>v3<span style="color:#f92672">.</span>z)
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">func</span> game_direction_to_engine(direction:<span style="color:#a6e22e">Vector3</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">Vector2</span>:
+    match direction:
+        <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>FORWARD:
+            <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>SINGLE_Z
+        <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>BACK:
+            <span style="color:#66d9ef">return</span> SINGLE_Z
+        <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>LEFT:
+            <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>SINGLE_X
+        <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>RIGHT:
+            <span style="color:#66d9ef">return</span> SINGLE_X
+        <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>UP:
+            <span style="color:#66d9ef">return</span> SINGLE_Y
+        <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>DOWN:
+            <span style="color:#66d9ef">return</span> <span style="color:#f92672">-</span>SINGLE_Y
+    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">Vector2</span><span style="color:#f92672">.</span>ZERO
+</code></pre></div><p>then grid.gd after clean up and adding some function related to the grid content( which can not be accessed by static function):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript"><span style="color:#75715e"># Godot Global/Autoload : Grid</span>
+<span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Node</span>
+
+<span style="color:#66d9ef">var</span> game_arr <span style="color:#f92672">=</span> [] <span style="color:#75715e"># a 3D array</span>
+
+<span style="color:#75715e"># let&#39;s just assume we&#39;ll have a board with the size of V3(8,8,8)</span>
+<span style="color:#66d9ef">var</span> game_size <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector3</span>(<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">8</span>,<span style="color:#ae81ff">8</span>)
+<span style="color:#66d9ef">func</span> _ready():
+    set_grid_array()
+
+<span style="color:#66d9ef">func</span> set_grid_array():
+    game_arr<span style="color:#f92672">.</span>clear()
+    <span style="color:#66d9ef">for</span> x <span style="color:#f92672">in</span> range(game_size<span style="color:#f92672">.</span>x):
+        game_arr<span style="color:#f92672">.</span>append([])
+        <span style="color:#66d9ef">for</span> y <span style="color:#f92672">in</span> range(game_size<span style="color:#f92672">.</span>y):
+            game_arr[x]<span style="color:#f92672">.</span>append([])
+            <span style="color:#66d9ef">for</span> _z <span style="color:#f92672">in</span> range(game_size<span style="color:#f92672">.</span>z):
+                game_arr[x][y]<span style="color:#f92672">.</span>append(null)
+
+<span style="color:#66d9ef">func</span> get_game_axis(x,y,z) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">Object</span>:
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">!</span>coordinate_within_range(x,y,z):
+        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">Object</span>()
+ 
+    <span style="color:#66d9ef">return</span> game_arr[x][y][z]
+
+
+<span style="color:#66d9ef">func</span> get_game_axisv(pos:<span style="color:#a6e22e">Vector3</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">Object</span>:
+    <span style="color:#66d9ef">return</span> get_game_axis(pos<span style="color:#f92672">.</span>x,pos<span style="color:#f92672">.</span>y,pos<span style="color:#f92672">.</span>z)
+
+<span style="color:#66d9ef">func</span> coordinate_within_range(x:<span style="color:#a6e22e">int</span>, y:<span style="color:#a6e22e">int</span>, z:<span style="color:#a6e22e">int</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">bool</span>:
+    <span style="color:#66d9ef">if</span> x <span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0</span> <span style="color:#f92672">||</span> y<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0</span> <span style="color:#f92672">||</span> z<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">0</span> <span style="color:#f92672">||</span> \
+    x <span style="color:#f92672">&gt;=</span> len(game_arr) <span style="color:#f92672">||</span> y <span style="color:#f92672">&gt;=</span> len(game_arr[<span style="color:#ae81ff">0</span>]) <span style="color:#f92672">||</span> z <span style="color:#f92672">&gt;=</span> len(game_arr[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">0</span>]):
+        <span style="color:#66d9ef">return</span> false
+    <span style="color:#66d9ef">return</span> true
+
+<span style="color:#66d9ef">func</span> coordinate_within_rangev(pos:<span style="color:#a6e22e">Vector3</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">bool</span>:
+    <span style="color:#66d9ef">return</span> coordinate_within_range(<span style="color:#a6e22e">int</span>(pos<span style="color:#f92672">.</span>x),<span style="color:#a6e22e">int</span>(pos<span style="color:#f92672">.</span>y),<span style="color:#a6e22e">int</span>(pos<span style="color:#f92672">.</span>z))
+
+<span style="color:#66d9ef">func</span> set_axis_obj(obj:<span style="color:#a6e22e">Object</span>, x:<span style="color:#a6e22e">int</span>, y:<span style="color:#a6e22e">int</span>, z:<span style="color:#a6e22e">int</span>) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">if</span> coordinate_within_range(x,y,z):
+        game_arr[x][y][z] <span style="color:#f92672">=</span> obj
+
+<span style="color:#66d9ef">func</span> set_axis_objv(obj:<span style="color:#a6e22e">Object</span>,pos:<span style="color:#a6e22e">Vector3</span>) <span style="color:#f92672">-&gt;</span> void:
+    set_axis_obj(obj,<span style="color:#a6e22e">int</span>(pos<span style="color:#f92672">.</span>x),<span style="color:#a6e22e">int</span>(pos<span style="color:#f92672">.</span>y),<span style="color:#a6e22e">int</span>(pos<span style="color:#f92672">.</span>z))
+</code></pre></div><p>‘game_arr’ is the variable that stores our grid content.
+the board size is V3(8,8,8)
+Change ‘set_game_pos’ in block_base.gd :</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript">class_name BlockBase
+<span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Sprite</span>
+
+<span style="color:#66d9ef">var</span> game_pos:<span style="color:#a6e22e">Vector3</span>
+<span style="color:#66d9ef">func</span> _ready():
+    <span style="color:#66d9ef">pass</span>
+
+<span style="color:#66d9ef">func</span> set_game_pos(x:<span style="color:#a6e22e">int</span>,y:<span style="color:#a6e22e">int</span>,z:<span style="color:#a6e22e">int</span>):
+    game_pos <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector3</span>(x,y,z)
+    <span style="color:#66d9ef">var</span> engine_pos <span style="color:#f92672">=</span> GridUtils<span style="color:#f92672">.</span>game_to_engine(x,y,z)
+    self<span style="color:#f92672">.</span>position <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector2</span>(engine_pos<span style="color:#f92672">.</span>x,engine_pos<span style="color:#f92672">.</span>y)
+    self<span style="color:#f92672">.</span>z_index <span style="color:#f92672">=</span> engine_pos<span style="color:#f92672">.</span>z
+    <span style="color:#66d9ef">pass</span>
+    
+<span style="color:#66d9ef">func</span> set_game_posv(new_pos:<span style="color:#a6e22e">Vector3</span>):
+    set_game_pos(<span style="color:#a6e22e">int</span>(new_pos<span style="color:#f92672">.</span>x),<span style="color:#a6e22e">int</span>(new_pos<span style="color:#f92672">.</span>y),<span style="color:#a6e22e">int</span>(new_pos<span style="color:#f92672">.</span>z))
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><h1 id="finite-state-machine">Finite State Machine</h1>
+<p>We will be using a finite state machine to make those blocks move the way we want. You can learn about the concept of FSM here.
+First, we need to define the states for those movable blocks.</p>
+<ol>
+<li>Idle<br>
+This is the initial state for our movables, and when they end their movement standing still.</li>
+<li>Move<br>
+When we issue commands to make them move in four directions.</li>
+<li>Jump<br>
+When blocks meet one block higher than their current game_pos.y, they will enter this state, and then they will continue moving in their direction, or fall to their previous position.</li>
+<li>Fall<br>
+Fall to game-pos.y - 1.</li>
+</ol>
+<p>======</p>
+<p>That’s all the states for movable. In this part, we’ll get idle and move states work.</p>
+<h1 id="code-for-fsm">Code for FSM</h1>
+<p>Let’s first create scripts for state machine and state base class.</p>
+<p>state_base.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript">class_name StateBase
+<span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Node</span>
+
+<span style="color:#66d9ef">onready</span> <span style="color:#66d9ef">var</span> _stae_machine :<span style="color:#f92672">=</span> get_parent()
+<span style="color:#66d9ef">var</span> movable:Movable
+<span style="color:#75715e"># then we can minipulate our movable in our states</span>
+
+<span style="color:#66d9ef">func</span> _ready():
+    movable <span style="color:#f92672">=</span> owner as Movable
+    <span style="color:#66d9ef">pass</span>
+
+<span style="color:#75715e"># we receive commands from our main scene</span>
+<span style="color:#75715e"># in our senario, we will not handle use input in our states</span>
+<span style="color:#66d9ef">func</span> _command(_msg:<span style="color:#a6e22e">Dictionary</span><span style="color:#f92672">=</span>{}) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">pass</span>
+
+<span style="color:#66d9ef">func</span> _update(_delta:<span style="color:#a6e22e">float</span>) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">pass</span>
+
+<span style="color:#75715e"># when entering the states,we run this function</span>
+<span style="color:#66d9ef">func</span> _enter(_msg:<span style="color:#f92672">=</span>{}) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">pass</span>
+
+<span style="color:#75715e"># run this when states exit</span>
+<span style="color:#66d9ef">func</span> _exit() <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>state_machine.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript">class_name StateMachine
+<span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Node</span>
+
+<span style="color:#66d9ef">export</span> <span style="color:#66d9ef">var</span> initial_state :<span style="color:#f92672">=</span> <span style="color:#a6e22e">NodePath</span>()
+<span style="color:#66d9ef">onready</span> <span style="color:#66d9ef">var</span> state: StateBase <span style="color:#f92672">=</span> get_node(initial_state) <span style="color:#66d9ef">setget</span> set_state
+<span style="color:#66d9ef">onready</span> <span style="color:#66d9ef">var</span> _state_name :<span style="color:#f92672">=</span> state<span style="color:#f92672">.</span>name
+
+<span style="color:#66d9ef">var</span> movable:Movable
+
+<span style="color:#66d9ef">func</span> _ready():
+    state<span style="color:#f92672">.</span>_enter()
+    movable <span style="color:#f92672">=</span> owner as Movable
+    <span style="color:#66d9ef">pass</span>
+<span style="color:#66d9ef">func</span> _update(delta) <span style="color:#f92672">-&gt;</span> void :
+    state<span style="color:#f92672">.</span>_update(delta)
+    <span style="color:#66d9ef">func</span> receive_command(msg:<span style="color:#a6e22e">Dictionary</span>) <span style="color:#f92672">-&gt;</span> void:
+    state<span style="color:#f92672">.</span>_command(msg)
+    <span style="color:#66d9ef">pass</span>
+<span style="color:#66d9ef">func</span> switch_state(target_state_path:<span style="color:#a6e22e">String</span>,msg:<span style="color:#a6e22e">Dictionary</span> <span style="color:#f92672">=</span>{}) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">!</span> has_node(target_state_path):
+        <span style="color:#66d9ef">return</span>
+
+    <span style="color:#66d9ef">var</span> target_state :<span style="color:#f92672">=</span> get_node(target_state_path)
+
+    state<span style="color:#f92672">.</span>_exit()
+    self<span style="color:#f92672">.</span>state <span style="color:#f92672">=</span> target_state
+    state<span style="color:#f92672">.</span>_enter(msg)
+
+<span style="color:#66d9ef">func</span> set_state(value: StateBase) <span style="color:#f92672">-&gt;</span> void:
+    state <span style="color:#f92672">=</span> value
+    _state_name <span style="color:#f92672">=</span> state<span style="color:#f92672">.</span>name
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>create nodes for states in the movable scene:</p>
+<p>In the inspector, assign the initial state to ‘idle’.
+and attach scripts to all those states that extend our StateBase class:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript"><span style="color:#66d9ef">extends</span> StateBase
+</code></pre></div><p>Send command to movable</p>
+<p>We’re gonna use ‘a,s,z,x’ to navigate our movable:</p>
+<p>Let’s handle input in our main scene, then send command to movable to make them from idle to other states.
+And add the function to handle input to send the command, in main.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript"><span style="color:#66d9ef">func</span> _input(event):
+    <span style="color:#66d9ef">if</span> event<span style="color:#f92672">.</span>is_action_pressed(<span style="color:#e6db74">&#34;movable_forward&#34;</span>):
+        send_command(<span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>FORWARD)
+    <span style="color:#66d9ef">elif</span> event<span style="color:#f92672">.</span>is_action_pressed(<span style="color:#e6db74">&#34;movable_back&#34;</span>):
+        send_command(<span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>BACK)
+    <span style="color:#66d9ef">elif</span> event<span style="color:#f92672">.</span>is_action_pressed(<span style="color:#e6db74">&#34;movable_left&#34;</span>):
+        send_command(<span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>LEFT)
+    <span style="color:#66d9ef">elif</span> event<span style="color:#f92672">.</span>is_action_pressed(<span style="color:#e6db74">&#34;movable_right&#34;</span>):
+        send_command(<span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>RIGHT)
+
+<span style="color:#66d9ef">func</span> send_command(command:<span style="color:#a6e22e">Vector3</span>) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">for</span> _m <span style="color:#f92672">in</span> get_tree()<span style="color:#f92672">.</span>get_nodes_in_group(<span style="color:#e6db74">&#34;movable&#34;</span>):
+        _m<span style="color:#f92672">.</span>receive_command({<span style="color:#e6db74">&#34;direction&#34;</span>:command})
+    set_physics_process(true)
+</code></pre></div><p>also add ‘set_process_input(true)’ at _ready
+In idle.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript"><span style="color:#66d9ef">extends</span> StateBase
+<span style="color:#66d9ef">func</span> _command(_msg:<span style="color:#a6e22e">Dictionary</span><span style="color:#f92672">=</span>{}) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">if</span> _msg<span style="color:#f92672">.</span>keys()<span style="color:#f92672">.</span>has(<span style="color:#e6db74">&#34;direction&#34;</span>):
+        _state_machine<span style="color:#f92672">.</span>switch_state(<span style="color:#e6db74">&#34;move&#34;</span>,{<span style="color:#e6db74">&#34;direction&#34;</span>:_msg[<span style="color:#e6db74">&#34;direction&#34;</span>]})
+        <span style="color:#66d9ef">pass</span>
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>Now we switch to the move state once we send the command in idle state, if we add something in _enter function of move.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript"><span style="color:#66d9ef">extends</span> StateBase
+<span style="color:#66d9ef">var</span> direction: <span style="color:#a6e22e">Vector3</span>
+<span style="color:#66d9ef">func</span> _enter(_msg:<span style="color:#a6e22e">Dictionary</span><span style="color:#f92672">=</span>{}) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">!</span>_msg<span style="color:#f92672">.</span>keys()<span style="color:#f92672">.</span>has(<span style="color:#e6db74">&#34;direction&#34;</span>):
+        <span style="color:#66d9ef">return</span>
+
+    direction <span style="color:#f92672">=</span> _msg[<span style="color:#e6db74">&#34;direction&#34;</span>]
+    print(<span style="color:#e6db74">&#34;enter move&#34;</span>)
+</code></pre></div><p>And run the scene, you should see the output :)</p>
+<p>At the _enter function of the move.gd, we will calculate how the movable move in the engine by the given direction, also the “next position” when the movable moved one block along that direction, I choose to make the calculation in a separate function called set_next_target, the “next” related variables will have a prefix “target”.</p>
+<p>Now edit the move.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript"><span style="color:#66d9ef">extends</span> StateBase
+<span style="color:#66d9ef">var</span> direction: <span style="color:#a6e22e">Vector3</span>
+<span style="color:#66d9ef">var</span> engine_direction:<span style="color:#a6e22e">Vector2</span>
+<span style="color:#66d9ef">var</span> target_game_pos:<span style="color:#a6e22e">Vector3</span>
+<span style="color:#66d9ef">var</span> target_z:<span style="color:#a6e22e">int</span>
+<span style="color:#66d9ef">var</span> target_engine_pos:<span style="color:#a6e22e">Vector2</span>
+<span style="color:#66d9ef">func</span> _enter(_msg:<span style="color:#a6e22e">Dictionary</span><span style="color:#f92672">=</span>{}) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">!</span>_msg<span style="color:#f92672">.</span>keys()<span style="color:#f92672">.</span>has(<span style="color:#e6db74">&#34;direction&#34;</span>):
+        <span style="color:#66d9ef">return</span>
+ 
+    direction <span style="color:#f92672">=</span> _msg[<span style="color:#e6db74">&#34;direction&#34;</span>]
+    engine_direction <span style="color:#f92672">=</span> GridUtils<span style="color:#f92672">.</span>game_direction_to_engine(direction)
+    set_next_target()
+
+<span style="color:#66d9ef">func</span> set_next_target():
+    target_game_pos <span style="color:#f92672">=</span> movable<span style="color:#f92672">.</span>game_pos <span style="color:#f92672">+</span> direction
+    <span style="color:#66d9ef">var</span> _target_game_pos_obj <span style="color:#f92672">=</span> Grid<span style="color:#f92672">.</span>get_game_axisv(target_game_pos)
+
+    <span style="color:#66d9ef">if</span> Grid<span style="color:#f92672">.</span>coordinate_within_rangev(target_game_pos) <span style="color:#f92672">&amp;&amp;</span> _target_game_pos_obj <span style="color:#f92672">==</span> null:
+        <span style="color:#66d9ef">var</span> _target_v3 <span style="color:#f92672">=</span> GridUtils<span style="color:#f92672">.</span>game_to_enginev(target_game_pos)
+        target_engine_pos <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector2</span>(_target_v3<span style="color:#f92672">.</span>x,_target_v3<span style="color:#f92672">.</span>y)
+        target_z <span style="color:#f92672">=</span> _target_v3<span style="color:#f92672">.</span>z
+        movable<span style="color:#f92672">.</span>set_game_posv(target_game_pos)
+    <span style="color:#66d9ef">if</span> direction <span style="color:#f92672">==</span> <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>FORWARD <span style="color:#f92672">||</span> direction <span style="color:#f92672">==</span> <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>LEFT:
+        movable<span style="color:#f92672">.</span>z_index <span style="color:#f92672">=</span> target_z <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+    <span style="color:#66d9ef">else</span>:
+        movable<span style="color:#f92672">.</span>z_index <span style="color:#f92672">=</span> target_z <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>
+    <span style="color:#66d9ef">else</span>:
+        _state_machine<span style="color:#f92672">.</span>switch_state(<span style="color:#e6db74">&#34;idle&#34;</span>)
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>Run the scene and hit z:</p>
+<p>it moved.
+But we don’t want them to move to the next block at once, we want them to move to their target gradually.
+Edit block_base.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript">class_name BlockBase
+<span style="color:#66d9ef">extends</span> <span style="color:#a6e22e">Sprite</span>
+
+<span style="color:#66d9ef">var</span> game_pos:<span style="color:#a6e22e">Vector3</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>INF
+
+<span style="color:#66d9ef">func</span> _ready():
+<span style="color:#75715e"># print(game_pos)</span>
+    <span style="color:#66d9ef">pass</span>
+
+<span style="color:#66d9ef">func</span> initial_game_pos(x:<span style="color:#a6e22e">int</span>,y:<span style="color:#a6e22e">int</span>,z:<span style="color:#a6e22e">int</span>) <span style="color:#f92672">-&gt;</span> void:
+    set_game_pos(x,y,z)
+    engine_fit_game_pos()
+
+<span style="color:#66d9ef">func</span> initial_game_posv(new_game_pos:<span style="color:#a6e22e">Vector3</span>) <span style="color:#f92672">-&gt;</span> void:
+    initial_game_pos(<span style="color:#a6e22e">int</span>(new_game_pos<span style="color:#f92672">.</span>x),<span style="color:#a6e22e">int</span>(new_game_pos<span style="color:#f92672">.</span>y),<span style="color:#a6e22e">int</span>(new_game_pos<span style="color:#f92672">.</span>z))
+
+<span style="color:#66d9ef">func</span> engine_fit_game_pos():
+    <span style="color:#66d9ef">var</span> engine_pos <span style="color:#f92672">=</span> GridUtils<span style="color:#f92672">.</span>game_to_enginev(game_pos)
+    self<span style="color:#f92672">.</span>position <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector2</span>(engine_pos<span style="color:#f92672">.</span>x,engine_pos<span style="color:#f92672">.</span>y)
+    self<span style="color:#f92672">.</span>z_index <span style="color:#f92672">=</span> engine_pos<span style="color:#f92672">.</span>z
+    <span style="color:#66d9ef">pass</span>
+
+<span style="color:#66d9ef">func</span> set_game_pos(x:<span style="color:#a6e22e">int</span>,y:<span style="color:#a6e22e">int</span>,z:<span style="color:#a6e22e">int</span>) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">if</span> game_pos <span style="color:#f92672">!=</span> <span style="color:#a6e22e">Vector3</span><span style="color:#f92672">.</span>INF:
+        Grid<span style="color:#f92672">.</span>set_axis_objv(null,game_pos)
+    Grid<span style="color:#f92672">.</span>set_axis_obj(self, x, y, z)
+    game_pos <span style="color:#f92672">=</span> <span style="color:#a6e22e">Vector3</span>(x,y,z)
+
+<span style="color:#66d9ef">func</span> set_game_posv(new_game_pos:<span style="color:#a6e22e">Vector3</span>) <span style="color:#f92672">-&gt;</span>void:
+    set_game_pos(<span style="color:#a6e22e">int</span>(new_game_pos<span style="color:#f92672">.</span>x),<span style="color:#a6e22e">int</span>(new_game_pos<span style="color:#f92672">.</span>y),<span style="color:#a6e22e">int</span>(new_game_pos<span style="color:#f92672">.</span>z))
+</code></pre></div><p>separate the original set_game_pos into two functions
+and change new_movable and new_unmovable in main.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript"><span style="color:#66d9ef">func</span> new_movable(x,y,z):
+    <span style="color:#66d9ef">var</span> _m <span style="color:#f92672">=</span> movable<span style="color:#f92672">.</span>instance()
+    <span style="color:#f92672">$</span>movable<span style="color:#f92672">.</span>add_child(_m)
+    _m<span style="color:#f92672">.</span>initial_game_pos(x,y,z)
+    <span style="color:#66d9ef">pass</span>
+<span style="color:#66d9ef">func</span> new_unmovable(x,y,z):
+    <span style="color:#66d9ef">var</span> _u <span style="color:#f92672">=</span> unmovable<span style="color:#f92672">.</span>instance()
+    <span style="color:#f92672">$</span>unmovable<span style="color:#f92672">.</span>add_child(_u)
+    _u<span style="color:#f92672">.</span>initial_game_pos(x,y,z)
+    <span style="color:#66d9ef">pass</span>
+</code></pre></div><p>change set_game_pos to initial_game_pos.
+Then we need to make movable moves in _update function in the move.gd, but before we do that, we know the blocks move in a Vector 2 direction, and they are moving in a grid, but the distance of each update may vary, so after an update, the result of the movement may be:
+haven’t reached target_engine_pos yet.
+movable.position = target_engine_pos
+movable has moved over the target_engine_pos.
+So in the last two situations, both should be labeled movable has reached the target position, let’s create a script to help us do this:</p>
+<p>In math.gd:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript">class_name Math
+
+<span style="color:#75715e"># start &lt; target &lt; end</span>
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">func</span> is_between(start:<span style="color:#a6e22e">float</span>,end:<span style="color:#a6e22e">float</span>,target:<span style="color:#a6e22e">float</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">bool</span>:
+    <span style="color:#66d9ef">var</span> _start <span style="color:#f92672">=</span> round(start <span style="color:#f92672">*</span> <span style="color:#ae81ff">10</span>)<span style="color:#f92672">/</span><span style="color:#ae81ff">10</span>
+    <span style="color:#66d9ef">var</span> _end <span style="color:#f92672">=</span> round(end <span style="color:#f92672">*</span> <span style="color:#ae81ff">10</span>)<span style="color:#f92672">/</span><span style="color:#ae81ff">10</span>
+    <span style="color:#66d9ef">var</span> _target <span style="color:#f92672">=</span> round(target <span style="color:#f92672">*</span> <span style="color:#ae81ff">10</span>)<span style="color:#f92672">/</span><span style="color:#ae81ff">10</span>
+
+    <span style="color:#66d9ef">var</span> _tmp 
+    <span style="color:#66d9ef">if</span> _start <span style="color:#f92672">&gt;=</span> _end:
+        _tmp <span style="color:#f92672">=</span> _start
+        _start <span style="color:#f92672">=</span> _end
+        _end <span style="color:#f92672">=</span> _tmp
+
+    <span style="color:#66d9ef">if</span> _start <span style="color:#f92672">&lt;=</span> _target <span style="color:#f92672">&amp;&amp;</span> target <span style="color:#f92672">&lt;=</span> _end:
+        <span style="color:#66d9ef">if</span> _end <span style="color:#f92672">-</span> _start <span style="color:#f92672">&gt;=</span> _end <span style="color:#f92672">-</span> _target:
+            <span style="color:#66d9ef">return</span> true
+
+    <span style="color:#66d9ef">return</span> false
+
+<span style="color:#66d9ef">static</span> <span style="color:#66d9ef">func</span> is_betweenv(start:<span style="color:#a6e22e">Vector2</span>,end:<span style="color:#a6e22e">Vector2</span>,target:<span style="color:#a6e22e">Vector2</span>) <span style="color:#f92672">-&gt;</span> <span style="color:#a6e22e">bool</span>:
+    <span style="color:#66d9ef">return</span> is_between(start<span style="color:#f92672">.</span>x,end<span style="color:#f92672">.</span>x,target<span style="color:#f92672">.</span>x) <span style="color:#f92672">&amp;&amp;</span>\
+        is_between(start<span style="color:#f92672">.</span>y,end<span style="color:#f92672">.</span>y,target<span style="color:#f92672">.</span>y)
+</code></pre></div><p>Before we edit move.gd, we can define a constant in movable.gd to define the move speed, I’m setting this to 2( this is slow but you can see the movement):</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-gdscript" data-lang="gdscript"><span style="color:#66d9ef">const</span> MOVESPEED <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
+Then we can add the _update function <span style="color:#f92672">in</span> the move<span style="color:#f92672">.</span>gd:
+<span style="color:#66d9ef">func</span> _update(_delta:<span style="color:#a6e22e">float</span>) <span style="color:#f92672">-&gt;</span> void:
+    <span style="color:#66d9ef">var</span> _after_move <span style="color:#f92672">=</span> movable<span style="color:#f92672">.</span>position <span style="color:#f92672">+</span> engine_direction <span style="color:#f92672">*</span> _delta <span style="color:#f92672">*</span> movable<span style="color:#f92672">.</span>MOVESPEED
+    <span style="color:#66d9ef">var</span> _reach_target <span style="color:#f92672">=</span> Math<span style="color:#f92672">.</span>is_betweenv(movable<span style="color:#f92672">.</span>position,_after_move,target_engine_pos)
+
+    <span style="color:#66d9ef">if</span> <span style="color:#f92672">!</span>_reach_target:
+        movable<span style="color:#f92672">.</span>position <span style="color:#f92672">=</span> _after_move
+    <span style="color:#66d9ef">else</span>:
+        movable<span style="color:#f92672">.</span>position <span style="color:#f92672">=</span> target_engine_pos
+        movable<span style="color:#f92672">.</span>z_index <span style="color:#f92672">=</span> target_z
+</code></pre></div><p>Run the scene:</p>
+<p>The gif is slower than the running scene, but it works as expected.
+That&rsquo;s it for this part, you can check out the Github repo for the code committed, to make it work as in Ladder Box, we still have a long way to go.<br>
+Stay tuned!</p>
+
+</div>
+
+<h2>Comments</h2>
+<div id="disqus_thread"></div>
+<script type="application/javascript">
+    var disqus_config = function () {
+    
+    
+    
+    };
+    (function() {
+        if (["localhost", "127.0.0.1"].indexOf(window.location.hostname) != -1) {
+            document.getElementById('disqus_thread').innerHTML = 'Disqus comments not available by default when the website is previewed locally.';
+            return;
+        }
+        var d = document, s = d.createElement('script'); s.async = true;
+        s.src = '//' + "fjmax" + '.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', +new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="https://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+    </main>
+
+    
+      
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'G-6VGEHV2BVT', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+    
+  </body>
+</html>

@@ -6,13 +6,39 @@
     <description>Recent content in Posts on Fj max</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 20 Apr 2021 22:53:04 +0800</lastBuildDate><atom:link href="https://blog.im404.me/posts/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 21 Apr 2021 00:54:38 +0800</lastBuildDate><atom:link href="https://blog.im404.me/posts/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Isometric 3D in 2D Invironment #1 Project Setup and Basic Calculation</title>
-      <link>https://blog.im404.me/posts/isometric-3d-in-2d-invironment-1_project-setup-and-basic-calculation/</link>
+      <title>Isometric 3D in 2D Environment #3 Make Blocks Move</title>
+      <link>https://blog.im404.me/posts/isometric-3d-in-2d-environment-3_make-blocks-move/</link>
+      <pubDate>Wed, 21 Apr 2021 00:54:38 +0800</pubDate>
+      
+      <guid>https://blog.im404.me/posts/isometric-3d-in-2d-environment-3_make-blocks-move/</guid>
+      <description>I&amp;rsquo;ve released a game called Ladder Box, it&amp;rsquo;s a 3D puzzle game that is all programmed in a 2D environment.
+  You can check it out here
+You can find all the textures, scripts in this GitHub repo: https://github.com/fengjiongmax/3D_iso_in_2D
+Godot 3.2.x is used in this project, you can check the commits for what&amp;rsquo;s new in each part of this series.
+Some changes Before we make more changes to movable and unmovable scripts: name movable Movable and add every movable to group “movable”:</description>
+    </item>
+    
+    <item>
+      <title>Isometric 3D in 2D Environment #2 Texure Render Order</title>
+      <link>https://blog.im404.me/posts/isometric-3d-in-2d-environment-2_texure-render-order/</link>
+      <pubDate>Tue, 20 Apr 2021 23:54:58 +0800</pubDate>
+      
+      <guid>https://blog.im404.me/posts/isometric-3d-in-2d-environment-2_texure-render-order/</guid>
+      <description>I&amp;rsquo;ve released a game called Ladder Box, it&amp;rsquo;s a 3D puzzle game that is all programmed in a 2D environment.
+  You can check it out here
+You can find all the textures, scripts in this GitHub repo: https://github.com/fengjiongmax/3D_iso_in_2D
+Godot 3.2.x is used in this project, you can check the commits for what&amp;rsquo;s new in each part of this series.
+Problem In the first article, we know that we must create new blocks in order, otherwise it&amp;rsquo;ll have some weird render like this:</description>
+    </item>
+    
+    <item>
+      <title>Isometric 3D in 2D environment #1 Project Setup and Basic Calculation</title>
+      <link>https://blog.im404.me/posts/isometric-3d-in-2d-environment-1_project-setup-and-basic-calculation/</link>
       <pubDate>Tue, 20 Apr 2021 22:53:04 +0800</pubDate>
       
-      <guid>https://blog.im404.me/posts/isometric-3d-in-2d-invironment-1_project-setup-and-basic-calculation/</guid>
+      <guid>https://blog.im404.me/posts/isometric-3d-in-2d-environment-1_project-setup-and-basic-calculation/</guid>
       <description>I&amp;rsquo;ve released a game called Ladder Box, it&amp;rsquo;s a 3D puzzle game that is all programmed in a 2D environment.
   You can check it out here
 Folks on Reddit curious how I make this, I tried to briefly describe the overall idea of how to make this happen but did not dive deep, and now I&amp;rsquo;m gonna tell you guys how I make this work.
